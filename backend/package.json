@@ -1,0 +1,25 @@
+{
+  "name": "music-finder-backend",
+  "version": "1.0.0",
+  "description": "Backend API for Music Finder — identifies songs from Instagram Reels / video / audio clips using FFmpeg + Chromaprint + AcoustID + MusicBrainz",
+  "main": "server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "axios": "^1.7.7",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.0",
+    "express-rate-limit": "^7.4.0",
+    "multer": "^1.4.5-lts.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.4"
+  }
+}

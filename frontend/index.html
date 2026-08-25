@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Music Finder — identify any song</title>
+<meta name="description" content="Heard an unknown song in a Reel? Upload, record, or drop the clip and Music Finder identifies it." />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<div class="app-shell">
+
+  <!-- ============ HOME ============ -->
+  <section class="screen" id="screen-home" data-screen>
+    <header class="topbar">
+      <span class="wordmark">MUSIC<span class="wordmark-accent">FINDER</span></span>
+    </header>
+
+    <div class="hero">
+      <p class="eyebrow">shazam for reels</p>
+      <h1 class="hero-title">Don't know<br>the song?</h1>
+      <p class="hero-sub">Drop the clip. We'll find it.</p>
+
+      <div class="capture" id="captureButton" tabindex="0" role="button" aria-label="Find this song">
+        <span class="ring ring-1"></span>
+        <span class="ring ring-2"></span>
+        <span class="ring ring-3"></span>
+        <span class="capture-core">
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M9 18V5l12-2v13" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="6" cy="18" r="3" stroke="currentColor" stroke-width="1.6"/>
+            <circle cx="18" cy="16" r="3" stroke="currentColor" stroke-width="1.6"/>
+          </svg>
+          <span class="capture-label">Find this song</span>
+        </span>
+      </div>
+
+      <p class="capture-hint">Upload &nbsp;·&nbsp; Record &nbsp;·&nbsp; Identify</p>
+    </div>
+
+    <div class="source-row">
+      <button class="source-btn" data-action="upload-video">
+        <span class="source-icon">▶</span>
+        <span>Video / Reel</span>
+      </button>
+      <button class="source-btn" data-action="upload-audio">
+        <span class="source-icon">♪</span>
+        <span>Audio file</span>
+      </button>
+      <button class="source-btn" data-action="record-audio">
+        <span class="source-icon">●</span>
+        <span>Record</span>
+      </button>
+    </div>
+
+    <input type="file" id="fileInputVideo" accept="video/*" hidden />
+    <input type="file" id="fileInputAudio" accept="audio/*" hidden />
+  </section>
+
+  <!-- ============ RECOGNITION / PROGRESS ============ -->
+  <section class="screen" id="screen-recognizing" data-screen hidden>
+    <div class="progress-wrap">
+      <div class="progress-ring">
+        <span class="ring ring-1 anim"></span>
+        <span class="ring ring-2 anim"></span>
+        <div class="progress-core">
+          <svg class="spinner" width="26" height="26" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-dasharray="42" stroke-dashoffset="10"/></svg>
+        </div>
+      </div>
+      <p class="progress-status mono" id="progressStatus">Uploading…</p>
+      <ol class="progress-steps" id="progressSteps" aria-hidden="true">
+        <li data-step="uploading">Uploading</li>
+        <li data-step="extracting">Extracting audio</li>
+        <li data-step="fingerprinting">Creating fingerprint</li>
+        <li data-step="searching">Searching database</li>
+        <li data-step="identifying">Identifying song</li>
+        <li data-step="complete">Complete</li>
+      </ol>
+      <button class="ghost-btn" id="cancelRecognize">Cancel</button>
+    </div>
+  </section>
+
+  <!-- ============ RESULT — MATCH ============ -->
+  <section class="screen" id="screen-result" data-screen hidden>
+    <header class="topbar topbar-back">
+      <button class="icon-btn" id="resultBack" aria-label="Back to home">←</button>
+      <span class="topbar-title">Song found</span>
+      <span></span>
+    </header>
+
+    <div class="result-card">
+      <div class="artwork-wrap">
+        <img id="resultArtwork" class="artwork" alt="" />
+        <div class="artwork-fallback" id="artworkFallback">♪</div>
+      </div>
+      <p class="eyebrow eyebrow-center" id="resultConfidence">match</p>
+      <h2 class="result-title" id="resultTitle">—</h2>
+      <p class="result-artist" id="resultArtist">—</p>
+      <p class="result-meta mono" id="resultMeta"></p>
+
+      <div class="stream-row">
+        <a class="stream-btn" id="linkYoutube" target="_blank" rel="noopener">▶ YouTube</a>
+        <a class="stream-btn" id="linkSpotify" target="_blank" rel="noopener">🟢 Spotify</a>
+        <a class="stream-btn" id="linkAppleMusic" target="_blank" rel="noopener">🍎 Apple Music</a>
+      </div>
+
+      <button class="primary-btn" id="findAnotherBtn">Find another song</button>
+    </div>
+  </section>
+
+  <!-- ============ RESULT — NO MATCH ============ -->
+  <section class="screen" id="screen-no-match" data-screen hidden>
+    <div class="empty-state">
+      <div class="empty-icon">♪</div>
+      <h2>No match found</h2>
+      <p id="noMatchMessage">We couldn't identify this song. Try uploading a clearer or longer audio clip.</p>
+      <button class="primary-btn" id="tryAgainBtn">Try again</button>
+    </div>
+  </section>
+
+  <!-- ============ RESULT — ERROR ============ -->
+  <section class="screen" id="screen-error" data-screen hidden>
+    <div class="empty-state empty-state-error">
+      <div class="empty-icon">!</div>
+      <h2>Something went wrong</h2>
+      <p id="errorMessage">Please try again.</p>
+      <button class="primary-btn" id="errorRetryBtn">Try again</button>
+    </div>
+  </section>
+
+  <!-- ============ HISTORY ============ -->
+  <section class="screen" id="screen-history" data-screen hidden>
+    <header class="topbar">
+      <span class="topbar-title">History</span>
+    </header>
+    <ul class="history-list" id="historyList"></ul>
+    <div class="empty-state" id="historyEmpty" hidden>
+      <div class="empty-icon">♪</div>
+      <h2>No songs yet</h2>
+      <p>Songs you identify will show up here.</p>
+    </div>
+  </section>
+
+  <!-- ============ SETTINGS ============ -->
+  <section class="screen" id="screen-settings" data-screen hidden>
+    <header class="topbar">
+      <span class="topbar-title">Settings</span>
+    </header>
+    <div class="settings-list">
+      <div class="settings-row">
+        <div>
+          <p class="settings-label">Save history</p>
+          <p class="settings-sub">Keep identified songs on this device</p>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="settingSaveHistory" checked>
+          <span class="switch-track"></span>
+        </label>
+      </div>
+      <div class="settings-row">
+        <div>
+          <p class="settings-label">Clip length analyzed</p>
+          <p class="settings-sub">Longer clips can improve accuracy</p>
+        </div>
+        <span class="mono settings-value">60s</span>
+      </div>
+      <button class="ghost-btn danger" id="clearHistoryBtn">Clear history</button>
+    </div>
+  </section>
+
+  <!-- ============ BOTTOM NAV ============ -->
+  <nav class="bottom-nav" id="bottomNav">
+    <button class="nav-btn is-active" data-nav="home">
+      <span class="nav-icon">⌂</span><span>Home</span>
+    </button>
+    <button class="nav-btn" data-nav="history">
+      <span class="nav-icon">≡</span><span>History</span>
+    </button>
+    <button class="nav-btn" data-nav="settings">
+      <span class="nav-icon">⚙</span><span>Settings</span>
+    </button>
+  </nav>
+
+</div>
+
+<script src="js/app.js"></script>
+</body>
+</html>
