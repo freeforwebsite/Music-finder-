@@ -7,6 +7,7 @@ const crypto = require("crypto");
 
 const { extractAudio, generateFingerprint, cleanup, AppError } = require("../utils/audioProcessor");
 const { AcoustIdProvider, RecognitionChain, fetchCoverArt, buildStreamingLinks } = require("../utils/recognitionProvider");
+const { downloadMedia } = require("../utils/downloader");
 
 const router = express.Router();
 
@@ -43,6 +44,7 @@ const FRIENDLY_MESSAGES = {
   BINARY_MISSING: "Song recognition is temporarily unavailable.",
   TIMEOUT: "That took too long to process. Try a shorter clip.",
   PROCESS_FAILED: "We couldn't process that file. Try a different one.",
+  DOWNLOAD_FAILED: "We couldn't download that link. It might be private or unsupported.",
 };
 
 function friendly(err) {
@@ -66,14 +68,22 @@ router.post("/", (req, res) => {
       return res.status(err.status || 400).json({ status: "error", code, message });
     }
 
-    if (!req.file) {
-      return res.status(400).json({ status: "error", code: "NO_FILE", message: "No file was uploaded." });
+    if (!req.file && !req.body.url) {
+      return res.status(400).json({ status: "error", code: "NO_FILE", message: "No file or URL was provided." });
     }
 
+    let uploadedPath = null;
     let wavPath = null;
-    const uploadedPath = req.file.path;
+    let isDownloaded = false;
 
     try {
+      if (req.file) {
+        uploadedPath = req.file.path;
+      } else if (req.body.url) {
+        uploadedPath = await downloadMedia(req.body.url);
+        isDownloaded = true;
+      }
+
       wavPath = await extractAudio(uploadedPath);
       const fingerprintData = await generateFingerprint(wavPath);
       const match = await chain.identify(fingerprintData);
@@ -106,7 +116,10 @@ router.post("/", (req, res) => {
       if (!(err instanceof AppError)) console.error("Unhandled recognition error:", err);
       return res.status(status).json({ status: "error", code, message });
     } finally {
-      cleanup(uploadedPath, wavPath);
+      cleanup(wavPath);
+      if (req.file || isDownloaded) {
+        cleanup(uploadedPath);
+      }
     }
   });
 });

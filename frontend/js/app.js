@@ -144,6 +144,16 @@
     }
   });
 
+  $('[data-action="paste-link"]').addEventListener("click", () => {
+    const url = window.prompt("Paste Instagram Reel, TikTok, or YouTube Short link here:");
+    if (url && url.trim().length > 0) {
+      if (!url.startsWith("http")) {
+        return showError({ message: "Please enter a valid full URL starting with http:// or https://" });
+      }
+      recognize({ url: url.trim() });
+    }
+  });
+
   // ---------------- Recognition pipeline (UI) ----------------
   const STEPS = ["uploading", "extracting", "fingerprinting", "searching", "identifying", "complete"];
   const STEP_LABELS = {
@@ -181,12 +191,16 @@
 
   let currentXhr = null;
 
-  function recognize(file) {
+  function recognize(input) {
     showScreen("screen-recognizing");
     setStep("uploading");
 
     const form = new FormData();
-    form.append("media", file);
+    if (input instanceof File || input instanceof Blob) {
+      form.append("media", input);
+    } else if (input && input.url) {
+      form.append("url", input.url);
+    }
 
     const xhr = new XMLHttpRequest();
     currentXhr = xhr;
