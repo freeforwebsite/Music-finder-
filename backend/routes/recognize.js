@@ -58,7 +58,7 @@ function friendly(err) {
   const code = err.code || "UNKNOWN";
   return {
     code,
-    message: FRIENDLY_MESSAGES[code] || "Something went wrong identifying that song. Please try again.",
+    message: (code === "PROVIDER_ERROR" && err.message !== "Recognition service error") ? err.message : (FRIENDLY_MESSAGES[code] || "Something went wrong identifying that song. Please try again."),
   };
 }
 
@@ -118,9 +118,9 @@ router.post("/", (req, res) => {
         },
       });
     } catch (err) {
+      console.error("Recognition Error:", err);
       const status = err.status || 500;
       const { code, message } = friendly(err instanceof AppError ? err : new AppError("UNKNOWN", err.message));
-      if (!(err instanceof AppError)) console.error("Unhandled recognition error:", err);
       return res.status(status).json({ status: "error", code, message });
     } finally {
       cleanup(wavPath);

@@ -6,6 +6,8 @@ const rateLimit = require("express-rate-limit");
 const recognizeRoute = require("./routes/recognize");
 
 const app = express();
+app.set('trust proxy', 1);
+
 const PORT = process.env.PORT || 3000;
 const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || "*")
   .split(",")
