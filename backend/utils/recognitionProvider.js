@@ -66,6 +66,54 @@ class AcoustIdProvider {
   }
 }
 
+class AuddProvider {
+  constructor(apiToken) {
+    this.apiToken = apiToken;
+  }
+
+  async identify({ wavPath }) {
+    if (!this.apiToken) return null;
+
+    const fs = require("fs");
+    const FormData = require("form-data"); // Use standard form-data package or let axios handle it
+    // Using axios with native fetch support or form-data
+    
+    let res;
+    try {
+      res = await axios.post("https://api.audd.io/", {
+        api_token: this.apiToken,
+        file: fs.createReadStream(wavPath),
+      }, {
+        headers: { "Content-Type": "multipart/form-data" },
+        timeout: 15000,
+      });
+    } catch (err) {
+      if (err.response?.status === 429) {
+        throw new AppError("RATE_LIMITED", "Recognition service is busy, try again shortly", 429);
+      }
+      throw new AppError("PROVIDER_UNREACHABLE", "Could not reach the recognition service", 502);
+    }
+
+    const data = res.data;
+    if (data.status !== "success") {
+      throw new AppError("PROVIDER_ERROR", data.error?.error_message || "Recognition service error", 502);
+    }
+
+    if (!data.result) return null;
+
+    return {
+      confidence: 100, // AudD doesn't provide confidence, but if it matches it's usually 100%
+      title: data.result.title || "Unknown title",
+      artist: data.result.artist || "Unknown artist",
+      album: data.result.album || null,
+      releaseDate: data.result.release_date || null,
+      musicbrainzRecordingId: null, // AudD doesn't natively return MBIDs
+      musicbrainzReleaseId: null,
+      artworkUrl: data.result.spotify?.album?.images?.[0]?.url || data.result.apple_music?.artwork?.url?.replace("{w}x{h}", "500x500") || null,
+    };
+  }
+}
+
 async function fetchCoverArt(releaseId) {
   if (!releaseId) return null;
   try {
@@ -113,4 +161,4 @@ class RecognitionChain {
   }
 }
 
-module.exports = { AcoustIdProvider, RecognitionChain, fetchCoverArt, buildStreamingLinks };
+module.exports = { AcoustIdProvider, AuddProvider, RecognitionChain, fetchCoverArt, buildStreamingLinks };

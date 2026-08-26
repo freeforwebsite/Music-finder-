@@ -6,7 +6,7 @@ const path = require("path");
 const crypto = require("crypto");
 
 const { extractAudio, generateFingerprint, cleanup, AppError } = require("../utils/audioProcessor");
-const { AcoustIdProvider, RecognitionChain, fetchCoverArt, buildStreamingLinks } = require("../utils/recognitionProvider");
+const { AcoustIdProvider, AuddProvider, RecognitionChain, fetchCoverArt, buildStreamingLinks } = require("../utils/recognitionProvider");
 const { downloadMedia } = require("../utils/downloader");
 
 const router = express.Router();
@@ -28,7 +28,14 @@ const upload = multer({
   },
 });
 
-const chain = new RecognitionChain([new AcoustIdProvider(process.env.ACOUSTID_CLIENT_KEY)]);
+const providers = [];
+if (process.env.AUDD_API_KEY) {
+  providers.push(new AuddProvider(process.env.AUDD_API_KEY));
+}
+if (process.env.ACOUSTID_CLIENT_KEY) {
+  providers.push(new AcoustIdProvider(process.env.ACOUSTID_CLIENT_KEY));
+}
+const chain = new RecognitionChain(providers);
 
 // User-facing copy for every failure mode named in the spec.
 const FRIENDLY_MESSAGES = {
@@ -86,7 +93,7 @@ router.post("/", (req, res) => {
 
       wavPath = await extractAudio(uploadedPath);
       const fingerprintData = await generateFingerprint(wavPath);
-      const match = await chain.identify(fingerprintData);
+      const match = await chain.identify({ ...fingerprintData, wavPath });
 
       if (!match) {
         return res.json({
